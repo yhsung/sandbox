@@ -1,12 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from PIL import Image
 import piexif
 import glob, os, sys
-import datetime
+from datetime import datetime, date, timedelta
 import getopt
-
+def usage():
+    print("{} -f <file> -t <time diff hours>".format(sys.argv[0]))
+    print("-h: help")
+    print("-f <file>: select the file")
+    print("-t <time diff hours>: time diff in hours")
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hf:t:", ["help"])
@@ -15,7 +19,7 @@ def main():
         usage()
         sys.exit(2)
     target = None
-    timediff = None
+    timediff = 6
     for option, argument in opts:
         if option in ("-h", "--help"):
             usage()
@@ -28,26 +32,12 @@ def main():
             print("not supported argument {}".format(option))
             usage()
             sys.exit()
-    print("Processing {}".format(target))
     im = Image.open(target)
     exif_dict = piexif.load(im.info["exif"])
-    #for i in exif_dict:
     if piexif.ImageIFD.DateTime in exif_dict["0th"]:
-        #datetime_org = datetime(exif_dict["0th"][piexif.ImageIFD.DateTime])
-        #datetime_mod = datetime_org - datetime.timedelta(hours=6)
-        print("DateTime is {}".format(exif_dict["0th"][piexif.ImageIFD.DateTime]))
-        #print(datetime_mod)
-    # metadata = pyexiv2.ImageMetadata(target)
-    # metadata.read()
-    # #print(metadata.exif_keys)
-    # tag = metadata['Exif.Image.DateTime']
-    # tag.value = tag.value - datetime.timedelta(hours=6)
-    # tag = metadata['Exif.Photo.DateTimeOriginal']
-    # tag.value = tag.value - datetime.timedelta(hours=6)
-    # tag = metadata['Exif.Photo.DateTimeDigitized']
-    # tag.value = tag.value - datetime.timedelta(hours=6)
-    # #metadata.write()
-    print("Update {}".format(target))
+        datetime_org = datetime.strptime(exif_dict["0th"][piexif.ImageIFD.DateTime], '%Y:%m:%d %H:%M:%S')
+        datetime_mod = datetime_org - timedelta(hours=timediff)
+        print("{}: DateTime is {} -> {}".format(target, exif_dict["0th"][piexif.ImageIFD.DateTime], datetime_mod))
 
 if __name__ == "__main__":
     main()
