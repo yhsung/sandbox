@@ -32,12 +32,24 @@ def main():
             print("not supported argument {}".format(option))
             usage()
             sys.exit()
+    if target is None:
+        usage()
+        sys.exit(-1)
     im = Image.open(target)
     exif_dict = piexif.load(im.info["exif"])
     if piexif.ImageIFD.DateTime in exif_dict["0th"]:
         datetime_org = datetime.strptime(exif_dict["0th"][piexif.ImageIFD.DateTime], '%Y:%m:%d %H:%M:%S')
         datetime_mod = datetime_org - timedelta(hours=timediff)
+        if piexif.ExifIFD.UserComment in exif_dict["Exif"]:
+            print("User comment: {} (keep datetime: {})".format(exif_dict["Exif"][piexif.ExifIFD.UserComment], exif_dict["0th"][piexif.ImageIFD.DateTime]))
+            sys.exit(0)
         print("{}: DateTime is {} -> {}".format(target, exif_dict["0th"][piexif.ImageIFD.DateTime], datetime_mod))
+        exif_dict["0th"][piexif.ImageIFD.DateTime] = datetime_mod.strftime('%Y:%m:%d %H:%M:%S')
+        exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = datetime_mod.strftime('%Y:%m:%d %H:%M:%S')
+        exif_dict["Exif"][piexif.ExifIFD.DateTimeDigitized] = datetime_mod.strftime('%Y:%m:%d %H:%M:%S')
+        exif_dict["Exif"][piexif.ExifIFD.UserComment] = 'Modified Time'
+        exif_bytes = piexif.dump(exif_dict)
+        im.save(target, "jpeg", exif=exif_bytes)
 
 if __name__ == "__main__":
     main()
